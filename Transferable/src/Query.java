@@ -1,18 +1,10 @@
 import java.io.Serializable;
-import java.time.LocalTime;
 import java.util.ArrayList;
 
 public class Query implements Serializable{
 
     private String query;
     private ArrayList<String> options;
-    private LocalTime deadline;
-
-    public Query(String query, ArrayList<String> options, LocalTime deadline) {
-        this.query = query;
-        this.options = options;
-        this.deadline = deadline;
-    }
 
     public Query(String query, ArrayList<String> options) {
         this.query = query;
@@ -33,14 +25,6 @@ public class Query implements Serializable{
 
     public void setOptions(ArrayList<String> options) {
         this.options = options;
-    }
-
-    public LocalTime getDeadline() {
-        return deadline;
-    }
-
-    public void setDeadline(LocalTime deadline) {
-        this.deadline = deadline;
     }
 
     @Override

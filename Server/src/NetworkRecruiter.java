@@ -5,18 +5,16 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class NetworkRecruiter {
-    int queryPort = Constants.QUERY_PORT;
-    int semaphorePort = Constants.SEMAPHORE_PORT;
-    ServerSocket semaphoreListener;
-    ServerSocket queryListener;
+    private ServerSocket semaphoreListener;
+    private ServerSocket queryListener;
 
-    NetworkManager superior;
-    Thread listener;
+    private NetworkManager manager;
+    private Thread listener;
 
     public NetworkRecruiter(NetworkManager superior) throws IOException {
-        this.superior = superior;
-        this.semaphoreListener = new ServerSocket(semaphorePort);
-        this.queryListener = new ServerSocket(queryPort);
+        this.manager = superior;
+        this.semaphoreListener = new ServerSocket(Constants.SEMAPHORE_PORT);
+        this.queryListener = new ServerSocket(Constants.QUERY_PORT);
         listen();
     }
 
@@ -27,6 +25,7 @@ public class NetworkRecruiter {
             ObjectInputStream semaphoreIn;
             ObjectOutputStream semaphoreOut;
             ObjectOutputStream queryOut;
+            ObjectInputStream queryIn;
             while(true){
                 try{
                     clientSemaphoreSocket = semaphoreListener.accept();
@@ -40,12 +39,13 @@ public class NetworkRecruiter {
                     semaphoreIn = new ObjectInputStream(clientSemaphoreSocket.getInputStream());
                     semaphoreOut = new ObjectOutputStream(clientSemaphoreSocket.getOutputStream());
                     queryOut = new ObjectOutputStream(clientQuerySocket.getOutputStream());
+                    queryIn = new ObjectInputStream(clientQuerySocket.getInputStream());
                 } catch (IOException e) {
                     System.err.println("Error docking with a client: ");
                     e.printStackTrace();
                     continue;
                 }
-                superior.addClient(new NetworkClient(clientSemaphoreSocket, clientQuerySocket, semaphoreIn, semaphoreOut, queryOut));
+                manager.addClient(new NetworkClient(manager, clientSemaphoreSocket, clientQuerySocket, semaphoreIn, semaphoreOut, queryOut, queryIn));
             }});
         listener.start();
     }

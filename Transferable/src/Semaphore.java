@@ -26,4 +26,8 @@ public abstract class Semaphore implements Serializable{
     public boolean[] getCommands(){
         return new boolean[]{returnState,displayMessage,requestUserAttention,reset};
     }
+
+    public boolean hasCommand(){
+        return (returnState || displayMessage || requestUserAttention || reset);
+    }
 }

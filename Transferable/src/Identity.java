@@ -1,11 +1,18 @@
 import java.io.Serializable;
-import java.time.LocalTime;
 
 public class Identity implements Serializable{
 
-    private String IP;
     private String name;
-    private LocalTime systemTime;
 
+    public Identity(String name) {
+        this.name = name;
+    }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 }
