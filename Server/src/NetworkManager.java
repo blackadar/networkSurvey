@@ -12,6 +12,12 @@ public class NetworkManager {
         clients.add(c);
     }
 
+    public void queryAll(Query query){
+        for(NetworkClient c : clients){
+            c.sendQuery(query);
+        }
+    }
+
     public void displayToAll(String message){
         for(NetworkClient c : clients){
             c.sendMessage(message);

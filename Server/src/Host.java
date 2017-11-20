@@ -27,4 +27,8 @@ public class Host extends Application {
         manager = new NetworkManager(this);
         recruiter = new NetworkRecruiter(manager);
     }
+
+    public ServerSemaphore getState(){
+        return new ServerSemaphore(identity, state);
+    }
 }
