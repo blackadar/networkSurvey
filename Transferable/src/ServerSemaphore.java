@@ -1,4 +1,6 @@
-public class ServerSemaphore extends Semaphore{
+import java.io.Serializable;
+
+public class ServerSemaphore extends Semaphore implements Serializable{
 
     private boolean queuing;                  // 0 Server is waiting for clients to connect, until host is ready
     private boolean awaitingConfirmation;     // 1 Server is waiting for clients to confirm their presence

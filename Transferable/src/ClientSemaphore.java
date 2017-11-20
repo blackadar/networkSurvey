@@ -1,4 +1,6 @@
-public class ClientSemaphore extends Semaphore{
+import java.io.Serializable;
+
+public class ClientSemaphore extends Semaphore implements Serializable{
 
     // Client State
     private boolean awaitingReady;            // 0 Client is awaiting the start of the game
