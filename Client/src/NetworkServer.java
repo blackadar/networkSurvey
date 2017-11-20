@@ -5,6 +5,7 @@ import java.util.Timer;
 
 public class NetworkServer {
     String IP;
+    Identity identity;
     ObjectInputStream semaphoreIn;
     ObjectInputStream queryIn;
     ObjectOutputStream semaphoreOut;
@@ -30,7 +31,8 @@ public class NetworkServer {
 
 
 
-    public NetworkServer(ObjectInputStream semaphoreIn, ObjectInputStream queryIn, ObjectOutputStream semaphoreOut, ObjectOutputStream queryOut) {
+    public NetworkServer(Identity identity, ObjectInputStream semaphoreIn, ObjectInputStream queryIn, ObjectOutputStream semaphoreOut, ObjectOutputStream queryOut) {
+        this.identity = identity;
         this.semaphoreIn = semaphoreIn;
         this.queryIn = queryIn;
         this.semaphoreOut = semaphoreOut;
