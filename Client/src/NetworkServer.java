@@ -119,4 +119,20 @@ public class NetworkServer {
     public boolean hasQuery(){
         return (!(currentQuery == null));
     }
+
+    public void close(){
+        semaphoreListener.interrupt();
+        queryListener.interrupt();
+        timer.cancel();
+        timer.purge();
+        try {
+            semaphoreOut.close();
+            semaphoreIn.close();
+            queryOut.close();
+            queryIn.close();
+        } catch (IOException e) {
+            System.err.println("Unable to close ports fully.");
+            e.printStackTrace();
+        }
+    }
 }

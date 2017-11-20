@@ -53,4 +53,10 @@ public class NetworkManager {
             c.reset();
         }
     }
+
+    public void closeAll(){
+        for(NetworkClient c : clients){
+            c.close();
+        }
+    }
 }

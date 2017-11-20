@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.util.Timer;
 
 public class NetworkClient {
+    Identity identity;
     NetworkManager manager;
     String IP;
     Socket semaphore;
@@ -25,7 +26,8 @@ public class NetworkClient {
     Response currentResponse;
     //                  ---                 //
 
-    public NetworkClient(NetworkManager manager, Socket semaphore, Socket query, ObjectInputStream semaphoreIn, ObjectOutputStream semaphoreOut, ObjectOutputStream queryOut, ObjectInputStream queryIn){
+    public NetworkClient(Identity identity, NetworkManager manager, Socket semaphore, Socket query, ObjectInputStream semaphoreIn, ObjectOutputStream semaphoreOut, ObjectOutputStream queryOut, ObjectInputStream queryIn){
+        this.identity = identity;
         this.manager = manager;
         this.semaphore = semaphore;
         this.query = query;
@@ -137,5 +139,21 @@ public class NetworkClient {
 
     public void reset(){
         sendSemaphore(new ServerSemaphore(manager.host.identity, manager.host.state, new boolean[]{false,false,false,true}));
+    }
+
+    public void close(){
+        semaphoreListener.interrupt();
+        queryListener.interrupt();
+        timer.cancel();
+        timer.purge();
+        try {
+            semaphoreOut.close();
+            semaphoreIn.close();
+            queryOut.close();
+            queryIn.close();
+        } catch (IOException e) {
+            System.err.println("Unable to close ports fully.");
+            e.printStackTrace();
+        }
     }
 }

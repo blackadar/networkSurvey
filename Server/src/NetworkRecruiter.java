@@ -26,6 +26,7 @@ public class NetworkRecruiter {
             ObjectOutputStream semaphoreOut;
             ObjectOutputStream queryOut;
             ObjectInputStream queryIn;
+            Identity identity;
             while(true){
                 try{
                     clientSemaphoreSocket = semaphoreListener.accept();
@@ -40,13 +41,25 @@ public class NetworkRecruiter {
                     semaphoreOut = new ObjectOutputStream(clientSemaphoreSocket.getOutputStream());
                     queryOut = new ObjectOutputStream(clientQuerySocket.getOutputStream());
                     queryIn = new ObjectInputStream(clientQuerySocket.getInputStream());
-                } catch (IOException e) {
-                    System.err.println("Error docking with a client: ");
+                    identity = (Identity)semaphoreIn.readObject();
+                } catch (IOException|ClassNotFoundException e) {
+                    System.err.println("Error synchronizing with a client: ");
                     e.printStackTrace();
                     continue;
                 }
-                manager.addClient(new NetworkClient(manager, clientSemaphoreSocket, clientQuerySocket, semaphoreIn, semaphoreOut, queryOut, queryIn));
+                manager.addClient(new NetworkClient(identity, manager, clientSemaphoreSocket, clientQuerySocket, semaphoreIn, semaphoreOut, queryOut, queryIn));
             }});
         listener.start();
+    }
+
+    public void close(){
+        listener.interrupt();
+        try {
+            semaphoreListener.close();
+            queryListener.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 }
