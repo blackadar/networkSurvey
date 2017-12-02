@@ -26,6 +26,14 @@ public class NetworkManager {
         }
     }
 
+    public ArrayList<Response> getResponses(){
+        ArrayList<Response> responses = new ArrayList<>();
+        for(NetworkClient c : clients){
+            responses.add(c.currentResponse);
+        }
+        return responses;
+    }
+
     public void displayToAll(String message){
         for(NetworkClient c : clients){
             c.sendMessage(message);

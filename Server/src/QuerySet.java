@@ -28,6 +28,10 @@ public class QuerySet implements Serializable{
         queries = new ArrayList<>();
     }
 
+    @Deprecated
+    /**
+     * Our initial implementation will only read from a text file for the set of Queries.
+     */
     public void write(String path){
         try{
             FileOutputStream fout = new FileOutputStream(path);
@@ -39,13 +43,27 @@ public class QuerySet implements Serializable{
         }
     }
 
-    public static QuerySet read(String path){
+    @Deprecated
+    /**
+     * Our initial implementation will only read from a text file for the set of Queries.
+     */
+    public static QuerySet readObject(String path){
         try{
             FileInputStream fin = new FileInputStream(path);
             ObjectInputStream ois = new ObjectInputStream(fin);
             return (QuerySet) ois.readObject();
         } catch (ClassNotFoundException | IOException e) {
             System.err.println("Error reading QuerySet.");
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static QuerySet parseText(String path){
+        try{
+            FileInputStream fin = new FileInputStream(path);
+
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
         return null;
