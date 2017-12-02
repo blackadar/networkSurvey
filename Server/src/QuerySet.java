@@ -3,6 +3,11 @@ import java.util.ArrayList;
 
 public class QuerySet implements Serializable{
     private ArrayList<Query> queries = new ArrayList<>();
+    private int timePerQuery = 10; //Default to be overwritten by parseText
+
+    public QuerySet(int timePerQuery){
+        this.timePerQuery = timePerQuery;
+    }
 
     public boolean hasNext(){
         return queries.size() > 0;
@@ -60,12 +65,63 @@ public class QuerySet implements Serializable{
     }
 
     public static QuerySet parseText(String path){
+        ArrayList<String> fromFile = new ArrayList<>();
+        QuerySet toReturn = null;
         try{
-            FileInputStream fin = new FileInputStream(path);
 
-        } catch (FileNotFoundException e) {
+            FileInputStream fstream_school = new FileInputStream(path);
+            DataInputStream data_input = new DataInputStream(fstream_school);
+            BufferedReader buffer = new BufferedReader(new InputStreamReader(data_input));
+            String str_line;
+
+            while ((str_line = buffer.readLine()) != null)
+            {
+                str_line = str_line.trim();
+                if ((str_line.length()!=0))
+                {
+                    fromFile.add(str_line);
+                }
+            }
+        } catch (IOException|AssertionError e) {
+            System.err.println("Unable to read QuerySet from file " + path + ".");
             e.printStackTrace();
+            return null;
         }
-        return null;
+        try {
+            toReturn = new QuerySet(Integer.parseInt(fromFile.get(0)));
+            int workingIndex = 1;
+            while(workingIndex < fromFile.size()){
+                while(!(fromFile.get(workingIndex).startsWith(":")) && workingIndex < fromFile.size()){
+                    workingIndex++;
+                }
+                if(workingIndex < fromFile.size()) {
+                    String question = fromFile.get(workingIndex).substring(1, fromFile.get(workingIndex).length());
+                    workingIndex++;
+
+                    ArrayList<String> options = new ArrayList<>();
+                    while(workingIndex < fromFile.size() && fromFile.get(workingIndex).startsWith(">")){
+                        options.add(fromFile.get(workingIndex).substring(1, fromFile.get(workingIndex).length()).trim());
+                        workingIndex++;
+                    }
+                    toReturn.queries.add(new Query(question, options));
+                }
+            }
+
+        } catch(NumberFormatException e){
+            System.err.println("QuerySet unable to be initialized.");
+        }
+        return toReturn;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for(Query q : queries){
+            builder.append(":").append(q.getQuery()).append("\n");
+            for(String s : q.getOptions()){
+                builder.append("  >").append(s).append("\n");
+            }
+        }
+        return builder.toString();
     }
 }
