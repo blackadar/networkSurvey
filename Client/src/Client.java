@@ -11,9 +11,7 @@ public class Client extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) {
-
-    }
+    public void start(Stage primaryStage) { }
 
     public ClientSemaphore getState(){
         return new ClientSemaphore(identity, state);

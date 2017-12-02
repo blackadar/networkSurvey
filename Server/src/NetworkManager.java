@@ -1,11 +1,18 @@
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class NetworkManager {
     ArrayList<NetworkClient> clients = new ArrayList<>();
     Host host;
+    Query lastQuery;
+    NetworkRecruiter recruiter;
+    Writer writer;
+    boolean fileHeaderWritten;
 
-    public NetworkManager(Host host){
+    public NetworkManager(Host host) throws IOException {
         this.host = host;
+        this.recruiter = new NetworkRecruiter(this);
+        this.writer = new Writer("results.csv");
     }
 
     public void addClient(NetworkClient c){
@@ -13,6 +20,7 @@ public class NetworkManager {
     }
 
     public void queryAll(Query query){
+        lastQuery = query;
         for(NetworkClient c : clients){
             c.sendQuery(query);
         }
@@ -42,6 +50,26 @@ public class NetworkManager {
         }
     }
 
+    public void writeResponsesToFile(){
+        if(!fileHeaderWritten){
+            writer.write("Query");
+            for(NetworkClient c : clients){
+                writer.write(c.identity.getName());
+                writer.newLine();
+            }
+        }
+        writer.write(lastQuery.toString());
+        for(NetworkClient c : clients){
+
+            if(c.hasResponse()){
+                writer.write(c.currentResponse.optionSelection + "");
+            } else {
+                writer.write("x");
+            }
+            writer.newLine();
+        }
+    }
+
     public void clearAllResponses(){
         for(NetworkClient c : clients){
             c.resetResponse();
@@ -55,6 +83,8 @@ public class NetworkManager {
     }
 
     public void closeAll(){
+        recruiter.close();
+        writer.close();
         for(NetworkClient c : clients){
             c.close();
         }
