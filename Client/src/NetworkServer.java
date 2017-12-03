@@ -6,6 +6,7 @@ import java.util.Timer;
 public class NetworkServer {
     String IP;
     Identity identity;
+    NetworkResponder responder;
     ObjectInputStream semaphoreIn;
     ObjectInputStream queryIn;
     ObjectOutputStream semaphoreOut;
@@ -31,12 +32,13 @@ public class NetworkServer {
 
 
 
-    public NetworkServer(Identity identity, ObjectInputStream semaphoreIn, ObjectInputStream queryIn, ObjectOutputStream semaphoreOut, ObjectOutputStream queryOut) {
+    public NetworkServer(Identity identity, NetworkResponder responder, ObjectInputStream semaphoreIn, ObjectInputStream queryIn, ObjectOutputStream semaphoreOut, ObjectOutputStream queryOut) {
         this.identity = identity;
         this.semaphoreIn = semaphoreIn;
         this.queryIn = queryIn;
         this.semaphoreOut = semaphoreOut;
         this.queryOut = queryOut;
+        this.responder = responder;
         this.placement = 0;
         timer = new Timer();
         listen();
@@ -112,6 +114,9 @@ public class NetworkServer {
 
     private void parseQuery(Query query){
         this.currentQuery = query;
+        for(QueryUpdateListener q : responder.listeners){
+            q.update(query);
+        }
     }
 
     private void clearQuery(){

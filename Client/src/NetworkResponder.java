@@ -3,41 +3,39 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class NetworkResponder {
 
-    ServerSocket semaphoreListener;
-    ServerSocket queryListener;
+    Socket semaphoreListener;
+    Socket queryListener;
 
     Client client;
+    ArrayList<QueryUpdateListener> listeners = new ArrayList<>();
 
-    public NetworkResponder(Client client) throws IOException {
-        this.semaphoreListener = new ServerSocket(Constants.SEMAPHORE_PORT);
-        this.queryListener = new ServerSocket(Constants.QUERY_PORT);
+    public NetworkResponder(Client client, String host) throws IOException {
+        this.semaphoreListener = new Socket(host, Constants.SEMAPHORE_PORT);
+        this.queryListener = new Socket(host, Constants.QUERY_PORT);
         this.client = client;
+        listeners.add(client);
     }
 
     public NetworkServer connect() throws IOException, ClassNotFoundException {
-        Socket serverSemaphoreSocket;
-        Socket serverQuerySocket;
         ObjectInputStream semaphoreIn;
         ObjectOutputStream semaphoreOut;
         ObjectOutputStream queryOut;
         ObjectInputStream queryIn;
         Identity identity;
 
-            serverSemaphoreSocket = semaphoreListener.accept();
-            serverQuerySocket = queryListener.accept();
-
-            semaphoreIn = new ObjectInputStream(serverSemaphoreSocket.getInputStream());
-            semaphoreOut = new ObjectOutputStream(serverSemaphoreSocket.getOutputStream());
-            queryOut = new ObjectOutputStream(serverQuerySocket.getOutputStream());
-            queryIn = new ObjectInputStream(serverQuerySocket.getInputStream());
+            semaphoreIn = new ObjectInputStream(semaphoreListener.getInputStream());
+            semaphoreOut = new ObjectOutputStream(semaphoreListener.getOutputStream());
+            queryOut = new ObjectOutputStream(queryListener.getOutputStream());
+            queryIn = new ObjectInputStream(queryListener.getInputStream());
             semaphoreOut.writeObject(client.identity);
             semaphoreOut.flush();
             identity = (Identity)semaphoreIn.readObject();
 
-        return new NetworkServer(identity, semaphoreIn, queryIn, semaphoreOut, queryOut);
+        return new NetworkServer(identity,this, semaphoreIn, queryIn, semaphoreOut, queryOut);
     }
 
     public void close() throws IOException {
