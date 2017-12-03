@@ -96,6 +96,8 @@ public class QuerySet implements Serializable {
         queries = new ArrayList<>();
     }
 
+    public int getTimePerQuery() { return timePerQuery;}
+
     @Deprecated
     /**
      * Our initial implementation will only read from a text file for the set of Queries.
