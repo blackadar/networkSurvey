@@ -10,6 +10,7 @@ public class NetworkRecruiter {
 
     private NetworkManager manager;
     private Thread listener;
+    boolean threadStop = false;
 
     public NetworkRecruiter(NetworkManager superior) throws IOException {
         this.manager = superior;
@@ -27,7 +28,7 @@ public class NetworkRecruiter {
             ObjectOutputStream queryOut;
             ObjectInputStream queryIn;
             Identity identity;
-            while(true){
+            while(!threadStop){
                 try{
                     clientSemaphoreSocket = semaphoreListener.accept();
                     clientQuerySocket = queryListener.accept();
@@ -55,7 +56,7 @@ public class NetworkRecruiter {
     }
 
     public void close(){
-        listener.interrupt();
+        threadStop = true;
         try {
             semaphoreListener.close();
             queryListener.close();

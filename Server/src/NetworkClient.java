@@ -4,6 +4,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Timer;
 
 public class NetworkClient {
@@ -21,6 +22,8 @@ public class NetworkClient {
     Thread semaphoreListener;
     Thread queryListener;
     Timer timer;
+
+    ArrayList<ResponseUpdateListener> listeners = new ArrayList<>();
 
     // !! --- Soft-Link Serialized Data --- !!
     boolean awaitingReady;
@@ -40,6 +43,7 @@ public class NetworkClient {
         this.queryIn = queryIn;
         this.IP = semaphore.getInetAddress().toString();
         timer = new Timer();
+        listeners.add(manager);
         listen();
         speak();
     }
@@ -101,6 +105,9 @@ public class NetworkClient {
 
     private void parseQueryResponse(Response response){
         this.currentResponse = response;
+        for(ResponseUpdateListener r : listeners){
+            r.update(response);
+        }
     }
 
     public void sendSemaphore(ServerSemaphore serverSemaphore){

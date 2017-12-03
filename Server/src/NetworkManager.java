@@ -1,18 +1,21 @@
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
-public class NetworkManager {
+public class NetworkManager implements ResponseUpdateListener{
     ArrayList<NetworkClient> clients = new ArrayList<>();
     Host host;
     Query lastQuery;
     NetworkRecruiter recruiter;
     Writer writer;
     boolean fileHeaderWritten;
+    ArrayList<ResponseUpdateListener> listeners = new ArrayList<>();
 
     public NetworkManager(Host host) throws IOException {
         this.host = host;
         this.recruiter = new NetworkRecruiter(this);
         this.writer = new Writer("results.csv");
+        listeners.add(host);
     }
 
     public void addClient(NetworkClient c){
@@ -100,6 +103,13 @@ public class NetworkManager {
         writer.close();
         for(NetworkClient c : clients){
             c.close();
+        }
+    }
+
+    @Override
+    public void update(Response r) {
+        for(ResponseUpdateListener res : listeners){
+            res.update(r);
         }
     }
 }

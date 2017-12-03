@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.sql.Time;
 import java.util.ArrayList;
 
-public class Host extends Application {
+public class Host extends Application implements ResponseUpdateListener{
     Identity identity = new Identity("Alpha Survey Server");
     boolean[] state = new boolean[7];
     private NetworkManager manager;
@@ -165,5 +165,10 @@ public class Host extends Application {
 
     public ServerSemaphore getState(){
         return new ServerSemaphore(identity, state);
+    }
+
+    @Override
+    public void update(Response r) {
+        //TODO: Update graph with Response
     }
 }
