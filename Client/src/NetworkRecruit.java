@@ -5,7 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
-public class NetworkResponder {
+public class NetworkRecruit {
 
     Socket semaphoreListener;
     Socket queryListener;
@@ -13,7 +13,7 @@ public class NetworkResponder {
     Client client;
     ArrayList<QueryUpdateListener> listeners = new ArrayList<>();
 
-    public NetworkResponder(Client client, String host) throws IOException {
+    public NetworkRecruit(Client client, String host) throws IOException {
         this.semaphoreListener = new Socket(host, Constants.SEMAPHORE_PORT);
         this.queryListener = new Socket(host, Constants.QUERY_PORT);
         this.client = client;

@@ -9,7 +9,7 @@ public class NetworkServer {
     String IP;
     Identity identity;
     Client client;
-    NetworkResponder responder;
+    NetworkRecruit responder;
     ObjectInputStream semaphoreIn;
     ObjectInputStream queryIn;
     ObjectOutputStream semaphoreOut;
@@ -37,7 +37,7 @@ public class NetworkServer {
 
 
 
-    public NetworkServer(Identity identity, Client client, NetworkResponder responder, ObjectInputStream semaphoreIn, ObjectInputStream queryIn, ObjectOutputStream semaphoreOut, ObjectOutputStream queryOut) {
+    public NetworkServer(Identity identity, Client client, NetworkRecruit responder, ObjectInputStream semaphoreIn, ObjectInputStream queryIn, ObjectOutputStream semaphoreOut, ObjectOutputStream queryOut) {
         this.identity = identity;
         this.semaphoreIn = semaphoreIn;
         this.queryIn = queryIn;
@@ -121,6 +121,19 @@ public class NetworkServer {
                 semaphoreOut.flush();
             } catch (IOException e) {
                 System.err.println("Unable to send client semaphore.");
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    public void sendResponse(Response r){
+        //TODO: Make threadsafe with a lock object
+        new Thread(()->{
+            try{
+                queryOut.writeObject(r);
+                queryOut.flush();
+            } catch (IOException e) {
+                System.err.println("Unable to send client response.");
                 e.printStackTrace();
             }
         }).start();
