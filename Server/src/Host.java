@@ -4,11 +4,18 @@ import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.*;
@@ -44,6 +51,12 @@ public class Host extends Application implements ResponseUpdateListener{
     double totalVotes = 0;
     int counter = 1;
     Rectangle timeLeft = new Rectangle(1, screen.getBounds().getHeight()/10, Color.GREY);
+    ArrayList<String> options;
+
+    BarChart chart;
+    CategoryAxis xAxis;
+    NumberAxis yAxis;
+    ObservableList<BarChart.Series> barChartData;
 
     public static void main(String[] args) {
         launch(args);
@@ -62,6 +75,9 @@ public class Host extends Application implements ResponseUpdateListener{
 
         JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
         querySet = null;
+        for(int i = 0; i < 4; i++){
+            voteCount.add(0);
+        }
 
             int result = jfc.showOpenDialog(null);
             if (result == JFileChooser.APPROVE_OPTION) {
@@ -99,6 +115,7 @@ public class Host extends Application implements ResponseUpdateListener{
         inPane.prefWidthProperty().bind(scene.widthProperty());
         inPane.setStyle("-fx-border-color: springgreen");
 
+
         VBox questionBox = new VBox(5);
         questionBox.getChildren().addAll(queryNum, query);
         questionBox.setAlignment(Pos.CENTER);
@@ -125,8 +142,11 @@ public class Host extends Application implements ResponseUpdateListener{
 
         HBox graphHolder = new HBox(50);
         graphHolder.setPrefHeight(screen.getBounds().getHeight()*0.6);
+        graphHolder.setAlignment(Pos.BOTTOM_CENTER);
+        graphHolder.setPadding(new Insets(0, 0, 0, 50));
 
         HBox labelHolder = new HBox(450);
+
         labelHolder.setPrefHeight(screen.getBounds().getHeight()*.1);
         labelHolder.setAlignment(Pos.CENTER);
 
@@ -136,24 +156,29 @@ public class Host extends Application implements ResponseUpdateListener{
         for(int i = 0; i < 4; i++) {
             answers.add(new Label());
             answers.get(i).setAlignment(Pos.CENTER);
-            answers.get(i).setFont(new Font(100));
+            answers.get(i).setFont(new Font(20));
             labelHolder.getChildren().add(answers.get(i));
         }
         root.setBottom(timeLeft);
+
+        /*
+        for(int i = 0; i < 4; i++) {
+            rectangles.add(new Rectangle((inPane.getWidth() - (5*50))/4, i*100, Color.BLACK));
+            graphHolder.getChildren().add(rectangles.get(i));
+        }
+        */
         Runnable r = () -> {
 
-
-
             final QuerySet querySet1 = querySet;
+
             if (querySet1.hasNext()) {
-
-
-
                 Platform.runLater(() -> {
                     Query query1 = querySet1.getNext();
 
+                    manager.queryAll(query1);
+
                     // Answer Labels
-                    ArrayList<String> options = query1.getOptions();
+                    options = query1.getOptions();
 
                     root.getChildren().remove(timeLeft);
                     timeLeft = new Rectangle(1, scene.getHeight() / 10, Color.GRAY);
@@ -162,24 +187,27 @@ public class Host extends Application implements ResponseUpdateListener{
                     query.setText(query1.getQuery());
                     queryNum.setText("Question " + counter);
 
+                    /*
                     for (int z = 0; z < answers.size(); z++) {
                         answers.get(z).setText(options.get(z));
                     }
+                    */
                     // Rectangle Timer section
                     ScaleTransition scaleTransition = new ScaleTransition(Duration.millis(queryTime + 850), timeLeft);
                     scaleTransition.setToX(scene.getWidth() * 2);
 
+                    inPane.setCenter(createBarGraph(options));
 
-                    // Graph Section
-
+                    /*
+                    //Reset Graph
+                    totalVotes = 0;
+                    voteCount = new ArrayList<>();
+                    updatePercentages();
+                    */
 
                     scaleTransition.play();
                     counter++;
                 });
-
-
-
-
             }
 
         };
@@ -207,28 +235,34 @@ public class Host extends Application implements ResponseUpdateListener{
         return new ServerSemaphore(identity, state);
     }
 
+    public Parent createBarGraph(ArrayList<String> options) {
+        xAxis =  new CategoryAxis();
+        xAxis.setCategories(FXCollections.<String>observableArrayList(options));
+        yAxis = new NumberAxis("Percent Votes", 0.0d, 100d, 10.0d);
+        barChartData = FXCollections.observableArrayList();
+        chart = new BarChart(xAxis, yAxis, barChartData, 50);
+
+        return chart;
+    }
+
     @Override
     public void update(Response r) {
+        System.out.println("Got a response " + r.optionSelection);
         totalVotes++;
         voteCount.set(r.optionSelection, voteCount.get(r.optionSelection) +1);
         updatePercentages();
     }
 
     public void updatePercentages() {
-        ArrayList<ScaleTransition> transitions = new ArrayList<>();
-        ArrayList<Thread> threads = new ArrayList<>();
-         for(int i = 0; i < rectangles.size(); i++) {
-             final int iToUse = i;
-             transitions.set(i, new ScaleTransition(Duration.seconds(0.25), rectangles.get(i)));
-             transitions.get(i).setToY((screen.getBounds().getHeight()*.6) *
-                             (voteCount.get(i)/totalVotes));
-             threads.set(i, new Thread(() -> {
-                 transitions.get(iToUse).play();
-             }));
-        }
+        if(totalVotes == 0) return;
 
-        for(Thread t : threads) {
-             t.start();
+        for(int i = 0; i < options.size(); i++) {
+            barChartData.add(new BarChart.Series(
+                    FXCollections.observableArrayList("Vote Percentage",
+                            FXCollections.observableArrayList(
+                                    new BarChart.Data(i, voteCount.get(i)/totalVotes)))
+                            )
+                    );
         }
 
     }
