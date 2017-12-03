@@ -11,6 +11,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -19,8 +20,12 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import javax.swing.*;
+import javax.swing.filechooser.FileSystemView;
+import java.io.File;
 import java.io.IOException;
 import java.sql.Time;
+import java.util.ArrayList;
 
 public class Host extends Application {
     Identity identity = new Identity("Alpha Survey Server");
@@ -42,6 +47,22 @@ public class Host extends Application {
         }
         */
 
+        JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+        QuerySet querySet = null;
+
+            int result = jfc.showOpenDialog(null);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = jfc.getSelectedFile();
+                if (selectedFile.exists()) {
+                    querySet = QuerySet.parseText(selectedFile.getPath());
+                }
+                else {
+                    JOptionPane.showConfirmDialog(null, "Query Set does not exist there.", "Error", JOptionPane.DEFAULT_OPTION);
+                    System.exit(1);
+                }
+            }
+
+
        Screen screen = Screen.getPrimary();
 
         BorderPane root = new BorderPane();
@@ -49,18 +70,16 @@ public class Host extends Application {
         Scene scene = new Scene(root, screen.getVisualBounds().getWidth(), screen.getVisualBounds().getHeight());
         primaryStage.setScene(scene);
 
+
+        // Start section Question and Answer
         Label query = new Label("Question");
         Label queryNum = new Label("Quesetion Zero");
-        Label answerOne = new Label("Same Answer One!!!!!");
-        Label answerTwo = new Label("Same Answer Two!!!!!");
-        Label answerThree = new Label("Same Answer Three!!!!!");
-        Label answerFour = new Label("Same Answer Four!!!!!");
-        query.setFont(new Font("Arial", 40));
-        queryNum.setFont(new Font("Arial", 40));
-        answerOne.setFont(new Font("Arial", 40));
-        answerTwo.setFont(new Font("Arial", 40));
-        answerThree.setFont(new Font("Arial", 40));
-        answerFour.setFont(new Font("Arial", 100));
+
+
+        query.setFont(new Font(20));
+        queryNum.setFont(new Font(20));
+
+
 
         BorderPane inPane = new BorderPane();
         inPane.prefHeightProperty().bind(scene.heightProperty());
@@ -70,38 +89,69 @@ public class Host extends Application {
         questionBox.getChildren().addAll(queryNum, query);
         questionBox.setAlignment(Pos.CENTER);
 
-        VBox answerBox = new VBox(10);
-        answerBox.getChildren().addAll(answerOne, answerTwo, answerThree, answerFour);
-        answerBox.setAlignment(Pos.CENTER);
+        GridPane answerPane = new GridPane();
 
-        Rectangle timeLeft = new Rectangle(1, scene.getHeight()/10, Color.RED);
+        answerPane.setHgap(10);
+        answerPane.setAlignment(Pos.CENTER);
 
-        root.setBottom(timeLeft);
-
-        ScaleTransition scaleTransition = new ScaleTransition(Duration.seconds(10), timeLeft);
-        scaleTransition.setByX(scene.getWidth() * 2);
-
-
-        inPane.setTop(answerBox);
+        inPane.setTop(answerPane);
         root.setCenter(inPane);
         root.setTop(questionBox);
 
-        scaleTransition.play();
         primaryStage.show();
-    }
 
-   /* public Timeline createTimeline(int time, Rectangle timeLeft, double sceneWidth) {
-        Timeline progressTime = new Timeline();
-        progressTime.getKeyFrames().addAll(
-                new KeyFrame(Duration.ZERO),
-                new KeyFrame(new Duration(time *10),
-                        new KeyValue(timeLeft.set,timeLeft.getWidth() + (sceneWidth/100)))
-                )
-        );
+        int counter = 0;
 
-        return progressTime;
+        while(querySet.hasNext()) {
+            Query query1 = querySet.getNext();
+
+            ArrayList<Label> answers = new ArrayList<>();
+
+            query.setText(query1.getQuery());
+            queryNum.setText("Question " + counter);
+
+            ArrayList<String> options = query1.getOptions();
+
+            for(String answer : options) {
+                Label l1 = new Label(answer);
+                answers.add(l1);
+                l1.setFont(new Font(20));
+            }
+
+            ArrayList<Label> leftColumnLabels = new ArrayList<>();
+            ArrayList<Label> rightColumnLabels = new ArrayList<>();
+
+            // CHANGE TO ONE HBOX WITH TWO VBOX IN IT
+            // VBOX ON LEFT ALIGNS TO RIGHT AND VBOX ON RIGHT ALIGNS LEFT
+            for(int i = 0; i < answers.size(); i++) {
+                if((i%2) == 0) leftColumnLabels.add(answers.get(i));
+                else rightColumnLabels.add(answers.get(i));
+            }
+            for(int i = 0; i < leftColumnLabels.size(); i++) {
+                answerPane.add(leftColumnLabels.get(i), 0, i);
+            }
+            for(int i = 0; i < rightColumnLabels.size(); i++) {
+                answerPane.add(rightColumnLabels.get(i), 0, i);
+            }
+
+
+            // Timer section
+            Rectangle timeLeft = new Rectangle(1, scene.getHeight() / 10, Color.RED);
+
+            root.setBottom(timeLeft);
+
+            ScaleTransition scaleTransition = new ScaleTransition(Duration.seconds(10), timeLeft);
+            scaleTransition.setToX(scene.getWidth() * 2);
+
+
+            // Graph Section
+            ArrayList<Rectangle> rectangles = new ArrayList<>();
+
+
+
+            scaleTransition.play();
+        }
     }
-    */
 
     private void initServer() throws IOException {
         manager = new NetworkManager(this);
