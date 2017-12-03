@@ -35,7 +35,7 @@ public class NetworkRecruiter {
                 } catch (IOException e) {
                     System.err.println("Error synchronizing with a client: ");
                     e.printStackTrace();
-                    continue;
+                    return;
                 }
                 try{
                     semaphoreIn = new ObjectInputStream(clientSemaphoreSocket.getInputStream());
@@ -48,7 +48,7 @@ public class NetworkRecruiter {
                 } catch (IOException|ClassNotFoundException e) {
                     System.err.println("Error synchronizing with a client: ");
                     e.printStackTrace();
-                    continue;
+                    return;
                 }
                 manager.addClient(new NetworkClient(identity, manager, clientSemaphoreSocket, clientQuerySocket, semaphoreIn, semaphoreOut, queryOut, queryIn));
             }});
@@ -60,6 +60,7 @@ public class NetworkRecruiter {
         try {
             semaphoreListener.close();
             queryListener.close();
+            listener.interrupt();
         } catch (IOException e) {
             e.printStackTrace();
         }

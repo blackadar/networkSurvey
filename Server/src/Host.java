@@ -223,7 +223,9 @@ public class Host extends Application implements ResponseUpdateListener{
 
     @Override
     public void stop(){
+        recruiter.close();
         manager.closeAll();
+        System.exit(0);
     }
 
     private void initServer() throws IOException {
