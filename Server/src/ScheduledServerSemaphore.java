@@ -6,6 +6,7 @@ public class ScheduledServerSemaphore extends TimerTask {
 
     public ScheduledServerSemaphore(Host host, NetworkClient client){
         this.host = host;
+        this.client = client;
     }
 
     @Override

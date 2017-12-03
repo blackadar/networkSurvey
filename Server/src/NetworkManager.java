@@ -19,6 +19,11 @@ public class NetworkManager {
         clients.add(c);
     }
 
+    public void removeClient(NetworkClient c){
+        c.close();
+        clients.remove(c);
+    }
+
     public void queryAll(Query query){
         lastQuery = query;
         for(NetworkClient c : clients){

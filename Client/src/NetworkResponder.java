@@ -27,15 +27,15 @@ public class NetworkResponder {
         ObjectInputStream queryIn;
         Identity identity;
 
-            semaphoreIn = new ObjectInputStream(semaphoreListener.getInputStream());
             semaphoreOut = new ObjectOutputStream(semaphoreListener.getOutputStream());
-            queryOut = new ObjectOutputStream(queryListener.getOutputStream());
+            semaphoreIn = new ObjectInputStream(semaphoreListener.getInputStream());
             queryIn = new ObjectInputStream(queryListener.getInputStream());
+            queryOut = new ObjectOutputStream(queryListener.getOutputStream());
             semaphoreOut.writeObject(client.identity);
             semaphoreOut.flush();
             identity = (Identity)semaphoreIn.readObject();
 
-        return new NetworkServer(identity,this, semaphoreIn, queryIn, semaphoreOut, queryOut);
+        return new NetworkServer(identity, client, this, semaphoreIn, queryIn, semaphoreOut, queryOut);
     }
 
     public void close() throws IOException {

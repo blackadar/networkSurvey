@@ -63,10 +63,10 @@ public class Client extends Application implements QueryUpdateListener{
         buttonPane.setAlignment(Pos.CENTER);
         buttonPane.setHgap(20);
         buttonPane.setVgap(20);
-        buttons.add(new Button("Option 0"));
-        buttons.add(new Button("Option 1"));
-        buttons.add(new Button("Option 2"));
-        buttons.add(new Button("Option 3"));
+        buttons.add(new Button("  ...   "));
+        buttons.add(new Button("  ...   "));
+        buttons.add(new Button("  ...   "));
+        buttons.add(new Button("  ...   "));
 
         buttonPane.addColumn(0, buttons.get(0), buttons.get(2));
         buttonPane.addColumn(1, buttons.get(1), buttons.get(3));
@@ -74,7 +74,7 @@ public class Client extends Application implements QueryUpdateListener{
         BorderPane.setAlignment(buttonPane, Pos.CENTER);
         root.setCenter(buttonPane);
 
-        Label status = new Label("Connecting...");
+        Label status = new Label("Queued");
         status.setFont(new Font(20));
         BorderPane.setAlignment(status, Pos.CENTER);
 
@@ -107,6 +107,12 @@ public class Client extends Application implements QueryUpdateListener{
         primaryStage.setScene(initialize);
         primaryStage.show();
         init.requestFocus();
+    }
+
+    @Override
+    public void stop() throws IOException {
+        server.close();
+        responder.close();
     }
 
     public ClientSemaphore getState(){

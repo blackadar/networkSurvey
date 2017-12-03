@@ -1,11 +1,14 @@
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.SocketException;
 import java.util.Timer;
 
 public class NetworkServer {
     String IP;
     Identity identity;
+    Client client;
     NetworkResponder responder;
     ObjectInputStream semaphoreIn;
     ObjectInputStream queryIn;
@@ -15,6 +18,8 @@ public class NetworkServer {
     Thread semaphoreListener;
     Thread queryListener;
     Timer timer;
+
+    boolean threadStop = false;
 
     // !! --- Soft-Link Serialized Data --- !!
 
@@ -32,13 +37,14 @@ public class NetworkServer {
 
 
 
-    public NetworkServer(Identity identity, NetworkResponder responder, ObjectInputStream semaphoreIn, ObjectInputStream queryIn, ObjectOutputStream semaphoreOut, ObjectOutputStream queryOut) {
+    public NetworkServer(Identity identity, Client client, NetworkResponder responder, ObjectInputStream semaphoreIn, ObjectInputStream queryIn, ObjectOutputStream semaphoreOut, ObjectOutputStream queryOut) {
         this.identity = identity;
         this.semaphoreIn = semaphoreIn;
         this.queryIn = queryIn;
         this.semaphoreOut = semaphoreOut;
         this.queryOut = queryOut;
         this.responder = responder;
+        this.client = client;
         this.placement = 0;
         timer = new Timer();
         listen();
@@ -47,20 +53,28 @@ public class NetworkServer {
 
     public void listen(){
         semaphoreListener = new Thread(() -> {
-            while(true){
+            while(!threadStop){
                 try {
                     parseSemaphore((ServerSemaphore) semaphoreIn.readObject());
+                } catch (SocketException | EOFException ex){
+                    System.err.println("Connection closed, unable to read.");
+                    ex.printStackTrace();
+                    close();
                 } catch (IOException | ClassNotFoundException e) {
                     System.err.println("Unable to interpret server semaphore.");
                     e.printStackTrace();
+                    close();
                 }
             }
         });
 
         queryListener = new Thread(() -> {
-            while(true){
+            while(!threadStop){
                 try {
                     parseQuery((Query) queryIn.readObject());
+                } catch (SocketException | EOFException ex){
+                    System.err.println("Connection closed, unable to read.");
+                    ex.printStackTrace();
                 } catch (IOException | ClassNotFoundException e) {
                     System.err.println("Unable to interpret server query.");
                     e.printStackTrace();
@@ -72,7 +86,7 @@ public class NetworkServer {
     }
 
     public void speak(){
-        timer.schedule(new ScheduledClientSemaphore(), 0, 1000);
+        timer.schedule(new ScheduledClientSemaphore(this, client), 0, 1000);
     }
 
     private void parseSemaphore(ServerSemaphore semaphore){
@@ -128,8 +142,7 @@ public class NetworkServer {
     }
 
     public void close(){
-        semaphoreListener.interrupt();
-        queryListener.interrupt();
+        threadStop = true;
         timer.cancel();
         timer.purge();
         try {

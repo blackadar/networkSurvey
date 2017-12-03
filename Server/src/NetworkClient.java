@@ -1,7 +1,9 @@
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Timer;
 
 public class NetworkClient {
@@ -14,6 +16,7 @@ public class NetworkClient {
     ObjectOutputStream semaphoreOut;
     ObjectOutputStream queryOut;
     ObjectInputStream queryIn;
+    boolean threadStop = false;
 
     Thread semaphoreListener;
     Thread queryListener;
@@ -43,18 +46,26 @@ public class NetworkClient {
 
     public void listen(){
         semaphoreListener = new Thread(() -> {
-            while(true){
+            while(!threadStop){
                 try {
                     parseSemaphore((ClientSemaphore)semaphoreIn.readObject());
+                } catch (SocketException | EOFException ex){
+                    System.err.println("Connection closed, unable to read.");
+                    ex.printStackTrace();
+                    manager.removeClient(this);
                 } catch (IOException | ClassNotFoundException e) {
                     System.err.println("Unable to interpret client semaphore.");
                     e.printStackTrace();
                 }
             }});
         queryListener = new Thread(() -> {
-            while(true) {
+            while(!threadStop) {
                 try {
                     parseQueryResponse((Response) queryIn.readObject());
+                } catch (SocketException | EOFException ex){
+                    System.err.println("Connection closed, unable to read.");
+                    ex.printStackTrace();
+                    manager.removeClient(this);
                 } catch (IOException | ClassNotFoundException e) {
                     System.err.println("Unable to interpret client response.");
                     e.printStackTrace();
@@ -142,8 +153,7 @@ public class NetworkClient {
     }
 
     public void close(){
-        semaphoreListener.interrupt();
-        queryListener.interrupt();
+        threadStop = true;
         timer.cancel();
         timer.purge();
         try {

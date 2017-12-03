@@ -39,13 +39,13 @@ public class Host extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-       /* try {
+        try {
             initServer();
         } catch (IOException e) {
             //TODO: Alert user of fatal Network error
             e.printStackTrace();
         }
-        */
+
 
         JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
         QuerySet querySet = null;
@@ -153,9 +153,14 @@ public class Host extends Application {
         }
     }
 
+    @Override
+    public void stop(){
+        manager.closeAll();
+    }
+
     private void initServer() throws IOException {
         manager = new NetworkManager(this);
-        recruiter = new NetworkRecruiter(manager);
+        this.recruiter = manager.recruiter;
     }
 
     public ServerSemaphore getState(){
