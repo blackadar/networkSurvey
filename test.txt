@@ -1,0 +1,22 @@
+15
+:What is your favourite colour?
+> Green
+> Red
+> Yellow
+> Blue
+
+:What is your favourite candy?
+
+
+> Chocolate
+>   Popsicle
+
+>Nothing
+> Anything?
+:What is 2+2?
+>7
+>5
+>2
+>4
+
+
