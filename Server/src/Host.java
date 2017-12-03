@@ -12,6 +12,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.*;
+import javafx.scene.image.Image;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
@@ -26,6 +30,7 @@ import java.io.IOException;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.TimerTask;
+import java.util.Arrays;
 
 public class Host extends Application implements ResponseUpdateListener{
     Identity identity = new Identity("Alpha Survey Server");
@@ -46,6 +51,7 @@ public class Host extends Application implements ResponseUpdateListener{
 
     @Override
     public void start(Stage primaryStage) {
+        primaryStage.getIcons().add(new Image(Host.class.getResourceAsStream("server.png")));
         try {
             initServer();
         } catch (IOException e) {
@@ -101,7 +107,6 @@ public class Host extends Application implements ResponseUpdateListener{
 
         answerPane.setHgap(10);
         answerPane.setAlignment(Pos.CENTER);
-
 
         inPane.setTop(answerPane);
         root.setCenter(inPane);
