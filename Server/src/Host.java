@@ -56,7 +56,7 @@ public class Host extends Application implements ResponseUpdateListener{
     BarChart chart;
     CategoryAxis xAxis;
     NumberAxis yAxis;
-    ObservableList<BarChart.Series> barChartData;
+    XYChart.Series dataSeries = new XYChart.Series();
 
     public static void main(String[] args) {
         launch(args);
@@ -196,7 +196,11 @@ public class Host extends Application implements ResponseUpdateListener{
                     ScaleTransition scaleTransition = new ScaleTransition(Duration.millis(queryTime + 850), timeLeft);
                     scaleTransition.setToX(scene.getWidth() * 2);
 
-                    inPane.setCenter(createBarGraph(options));
+                    createBarGraph(options);
+                    inPane.setCenter(chart);
+
+                    chart.getData().add(new XYChart.Data("Green", 58d));
+
 
                     /*
                     //Reset Graph
@@ -237,21 +241,24 @@ public class Host extends Application implements ResponseUpdateListener{
         return new ServerSemaphore(identity, state);
     }
 
-    public Parent createBarGraph(ArrayList<String> options) {
+    public void createBarGraph(ArrayList<String> options) {
         xAxis =  new CategoryAxis();
         xAxis.setCategories(FXCollections.<String>observableArrayList(options));
+        xAxis.setLabel("Answers");
         yAxis = new NumberAxis("Percent Votes", 0.0d, 100d, 10.0d);
-        barChartData = FXCollections.observableArrayList();
-        chart = new BarChart(xAxis, yAxis, barChartData, 50);
 
-        return chart;
+        dataSeries.setName("Answer Percentage");
+
+        chart = new BarChart(xAxis, yAxis);
     }
 
     @Override
     public void update(Response r) {
         System.out.println("Got a response " + r.optionSelection);
         totalVotes++;
+        System.out.println(voteCount.get(r.optionSelection));
         voteCount.set(r.optionSelection, voteCount.get(r.optionSelection) +1);
+        System.out.println(voteCount.get(r.optionSelection));
         updatePercentages();
     }
 
@@ -259,14 +266,10 @@ public class Host extends Application implements ResponseUpdateListener{
         if(totalVotes == 0) return;
 
         for(int i = 0; i < options.size(); i++) {
-            barChartData.add(new BarChart.Series(
-                    FXCollections.observableArrayList("Vote Percentage",
-                            FXCollections.observableArrayList(
-                                    new BarChart.Data(i, voteCount.get(i)/totalVotes)))
-                            )
-                    );
+            dataSeries.getData().add(new XYChart.Data(options.get(i), voteCount.get(i)/totalVotes));
         }
 
+        chart.getData().add(dataSeries);
     }
 
 }
