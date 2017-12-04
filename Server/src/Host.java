@@ -1,19 +1,9 @@
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
 import javafx.animation.ScaleTransition;
-import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Rectangle2D;
-import javafx.scene.Group;
-import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
@@ -21,9 +11,6 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.*;
 import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
@@ -39,41 +26,40 @@ import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.io.IOException;
-import java.net.*;
-import java.sql.Time;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.TimerTask;
-import java.util.Arrays;
 
-public class Host extends Application implements ResponseUpdateListener{
+public class Host extends Application implements ResponseUpdateListener {
+    private static final Object updateLock = new Object();
+    private static final Object percentageLock = new Object();
     Identity identity = new Identity("Alpha Survey Server");
     ArrayList<String> addresses = new ArrayList<>();
     int locationCounter = 0;
     boolean[] state = new boolean[7];
-    private NetworkManager manager;
-    private NetworkRecruiter recruiter;
-    private QuerySet querySet;
     Query query1;
     ArrayList<Rectangle> rectangles = new ArrayList<>();
     ArrayList<Integer> voteCount = new ArrayList<>();
     Screen screen = Screen.getPrimary();
     int totalVotes = 0;
     int counter = 1;
-    Rectangle timeLeft = new Rectangle(1, screen.getBounds().getHeight()/10, Color.GREY);
+    Rectangle timeLeft = new Rectangle(1, screen.getBounds().getHeight() / 10, Color.GREY);
     ArrayList<String> options;
     ArrayList<String> topAnswers = new ArrayList<>();
     ArrayList<Integer> topCounts = new ArrayList<>();
     VBox resultBox = new VBox(10);
     ArrayList<Label> results = new ArrayList<>();
-
-    private static final Object updateLock = new Object();
-    private static final Object percentageLock = new Object();
-
     BarChart<String, Number> chart;
     CategoryAxis xAxis;
     NumberAxis yAxis;
     XYChart.Series<String, Number> dataSeries = new XYChart.Series<>();
+    private NetworkManager manager;
+    private NetworkRecruiter recruiter;
+    private QuerySet querySet;
 
     public static void main(String[] args) {
         launch(args);
@@ -87,14 +73,13 @@ public class Host extends Application implements ResponseUpdateListener{
 
         // @see "https://stackoverflow.com/questions/9481865/getting-the-ip-address-of-the-current-machine-using-java"
         Enumeration e = NetworkInterface.getNetworkInterfaces();
-        while(e.hasMoreElements())
-        {
+        while (e.hasMoreElements()) {
             NetworkInterface n = (NetworkInterface) e.nextElement();
             Enumeration ee = n.getInetAddresses();
-            while (ee.hasMoreElements())
-            {
+            while (ee.hasMoreElements()) {
                 InetAddress i = (InetAddress) ee.nextElement();
-                if(!((i.getHostAddress().trim().startsWith("fe") || (i.getHostAddress().trim().startsWith("0:") || (i.getHostAddress().trim().equals("127.0.0.1")))))) addresses.add(i.getHostAddress());
+                if (!((i.getHostAddress().trim().startsWith("fe") || (i.getHostAddress().trim().startsWith("0:") || (i.getHostAddress().trim().equals("127.0.0.1"))))))
+                    addresses.add(i.getHostAddress());
             }
         }
 
@@ -105,7 +90,7 @@ public class Host extends Application implements ResponseUpdateListener{
         }
 
         JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
-        for(int i = 0; i < 4; i++){
+        for (int i = 0; i < 4; i++) {
             voteCount.add(0);
         }
         int result = jfc.showOpenDialog(null);
@@ -113,15 +98,15 @@ public class Host extends Application implements ResponseUpdateListener{
             File selectedFile = jfc.getSelectedFile();
             if (selectedFile.exists()) {
                 querySet = QuerySet.parseText(selectedFile.getPath());
-                } else {
-                    JOptionPane.showConfirmDialog(null, "File Read Error.", "Error", JOptionPane.DEFAULT_OPTION);
-                    System.exit(1);
-                }
+            } else {
+                JOptionPane.showConfirmDialog(null, "File Read Error.", "Error", JOptionPane.DEFAULT_OPTION);
+                System.exit(1);
+            }
         }
 
         //Queue Scene
         BorderPane init = new BorderPane();
-        init.setPadding(new Insets(10,10,10,10));
+        init.setPadding(new Insets(10, 10, 10, 10));
         Scene initScene = new Scene(init, 300, 300);
 
         VBox labelHolder = new VBox(20);
@@ -141,7 +126,6 @@ public class Host extends Application implements ResponseUpdateListener{
         init.setCenter(start);
 
 
-
         //Result Scene
         BorderPane resultPane = new BorderPane();
         resultPane.setPadding(new Insets(10));
@@ -151,7 +135,6 @@ public class Host extends Application implements ResponseUpdateListener{
         BorderPane.setAlignment(resultLabel, Pos.CENTER);
         resultBox.setAlignment(Pos.CENTER);
         resultLabel.setFont(new Font(40));
-
 
 
         resultPane.setCenter(resultBox);
@@ -248,8 +231,8 @@ public class Host extends Application implements ResponseUpdateListener{
         });
 
         timer.schedule(new TimerTask() {
-            public void run(){
-                if(locationCounter + 1 < addresses.size()){
+            public void run() {
+                if (locationCounter + 1 < addresses.size()) {
                     locationCounter++;
                 } else {
                     locationCounter = 0;
@@ -265,43 +248,43 @@ public class Host extends Application implements ResponseUpdateListener{
     }
 
     @Override
-    public void stop(){
+    public void stop() {
         recruiter.close();
         manager.closeAll();
         System.exit(0);
     }
 
-    private void clearVoteCounts(){
+    private void clearVoteCounts() {
         dataSeries.getData().clear();
-        for(int i = 0; i < voteCount.size(); i++){
-            voteCount.set(i,0);
+        for (int i = 0; i < voteCount.size(); i++) {
+            voteCount.set(i, 0);
         }
         totalVotes = 0;
     }
 
-    private void updateTopArrays(){
-        if(voteCount.size() < 1) return;
+    private void updateTopArrays() {
+        if (voteCount.size() < 1) return;
         int maxIndex = 0;
-        for(int i = 0; i < voteCount.size(); i++){
-            if(voteCount.get(i) > voteCount.get(maxIndex)){
+        for (int i = 0; i < voteCount.size(); i++) {
+            if (voteCount.get(i) > voteCount.get(maxIndex)) {
                 maxIndex = i;
             }
         }
 
-        if(!(query1 == null)) {
+        if (!(query1 == null)) {
             topAnswers.add(query1.getOptions().get(maxIndex));
             topCounts.add(voteCount.get(maxIndex));
         }
     }
 
-    private void finalizeResults(){
-        for(int i = 0; i < topAnswers.size(); i++){
+    private void finalizeResults() {
+        for (int i = 0; i < topAnswers.size(); i++) {
             Label toAdd = new Label((i + 1) + ". " + topAnswers.get(i) + " : " + topCounts.get(i));
             toAdd.setFont(new Font(20));
             results.add(toAdd);
         }
 
-        for(Label l : results){
+        for (Label l : results) {
             resultBox.getChildren().add(l);
         }
     }
@@ -311,12 +294,12 @@ public class Host extends Application implements ResponseUpdateListener{
         this.recruiter = manager.recruiter;
     }
 
-    public ServerSemaphore getState(){
+    public ServerSemaphore getState() {
         return new ServerSemaphore(identity, state);
     }
 
     public void createBarGraph(ArrayList<String> options) {
-        xAxis =  new CategoryAxis();
+        xAxis = new CategoryAxis();
         xAxis.setCategories(FXCollections.observableArrayList(options));
         xAxis.tickLabelFontProperty().set(Font.font(20));
         yAxis = new NumberAxis("Percent Votes", 0.0d, 100d, 10.0d);
@@ -332,7 +315,6 @@ public class Host extends Application implements ResponseUpdateListener{
     @Override
     public void update(Response r) {
         synchronized (updateLock) {
-            System.out.println("Got a response " + r.optionSelection);
             totalVotes++;
             voteCount.set(r.optionSelection, voteCount.get(r.optionSelection) + 1);
             updatePercentages();
@@ -341,33 +323,20 @@ public class Host extends Application implements ResponseUpdateListener{
 
     public void updatePercentages() {
         synchronized (percentageLock) {
-            System.out.println("Updating Percentages: \n" +
-                    "Total Votes: " + totalVotes + "\n" +
-                    "Vote Counts: " + voteCount + "\n");
-
             if (totalVotes == 0) return;
             Platform.runLater(() -> {
                 for (int i = 0; i < options.size(); i++) {
-                    if(!(dataSeries.getData().get(i).getYValue().doubleValue() == (voteCount.get(i)* 100.0) / totalVotes)){
-                        dataSeries.getData().get(i).setYValue((voteCount.get(i)* 100.0) / totalVotes);
+                    if (!(dataSeries.getData().get(i).getYValue().doubleValue() == (voteCount.get(i) * 100.0) / totalVotes)) {
+                        dataSeries.getData().get(i).setYValue((voteCount.get(i) * 100.0) / totalVotes);
                     }
                 }
-                System.out.println("Data Series: " + dataSeries.getData());
             });
         }
     }
 
-    public void initPercentages(){
+    public void initPercentages() {
         for (int i = 0; i < options.size(); i++) {
             dataSeries.getData().add(i, new XYChart.Data<>(options.get(i), 0));
-        }
-    }
-
-    public void clearPercentages(){
-        for (int i = 0; i < dataSeries.getData().size(); i++) {
-            if(!(dataSeries.getData().get(i).getYValue().doubleValue() == 0)){
-                dataSeries.getData().get(i).setYValue(0);
-            }
         }
     }
 
