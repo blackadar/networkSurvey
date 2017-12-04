@@ -53,10 +53,10 @@ public class Host extends Application implements ResponseUpdateListener{
     Rectangle timeLeft = new Rectangle(1, screen.getBounds().getHeight()/10, Color.GREY);
     ArrayList<String> options;
 
-    BarChart chart;
+    BarChart<String, Number> chart;
     CategoryAxis xAxis;
     NumberAxis yAxis;
-    XYChart.Series dataSeries = new XYChart.Series();
+    XYChart.Series<String, Number> dataSeries = new XYChart.Series<>();
 
     public static void main(String[] args) {
         launch(args);
@@ -199,7 +199,7 @@ public class Host extends Application implements ResponseUpdateListener{
                     createBarGraph(options);
                     inPane.setCenter(chart);
 
-                    chart.getData().add(new XYChart.Data("Green", 58d));
+                    //chart.getData().add(new XYChart.Series<>());
 
 
                     /*
@@ -247,9 +247,9 @@ public class Host extends Application implements ResponseUpdateListener{
         xAxis.setLabel("Answers");
         yAxis = new NumberAxis("Percent Votes", 0.0d, 100d, 10.0d);
 
-        dataSeries.setName("Answer Percentage");
+        //dataSeries.setName("Answer Percentage");
 
-        chart = new BarChart(xAxis, yAxis);
+        chart = new BarChart<>(xAxis, yAxis);
     }
 
     @Override
@@ -265,11 +265,12 @@ public class Host extends Application implements ResponseUpdateListener{
     public void updatePercentages() {
         if(totalVotes == 0) return;
 
-        for(int i = 0; i < options.size(); i++) {
-            dataSeries.getData().add(new XYChart.Data(options.get(i), voteCount.get(i)/totalVotes));
-        }
-
-        chart.getData().add(dataSeries);
+        Platform.runLater(() -> {
+            for(int i = 0; i < options.size(); i++) {
+                dataSeries.getData().add(new XYChart.Data<>(options.get(i), (voteCount.get(i)/totalVotes) * 100));
+            }
+            chart.getData().add(dataSeries);
+        });
     }
 
 }
