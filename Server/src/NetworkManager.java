@@ -101,9 +101,11 @@ public class NetworkManager implements ResponseUpdateListener{
     public void closeAll(){
         recruiter.close();
         writer.close();
+        /*
         for(NetworkClient c : clients){
             c.close();
         }
+        */
     }
 
     @Override

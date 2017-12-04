@@ -22,6 +22,7 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.*;
 import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
@@ -53,13 +54,18 @@ public class Host extends Application implements ResponseUpdateListener{
     private NetworkManager manager;
     private NetworkRecruiter recruiter;
     private QuerySet querySet;
+    Query query1;
     ArrayList<Rectangle> rectangles = new ArrayList<>();
     ArrayList<Integer> voteCount = new ArrayList<>();
     Screen screen = Screen.getPrimary();
-    double totalVotes = 0;
+    int totalVotes = 0;
     int counter = 1;
     Rectangle timeLeft = new Rectangle(1, screen.getBounds().getHeight()/10, Color.GREY);
     ArrayList<String> options;
+    ArrayList<String> topAnswers = new ArrayList<>();
+    ArrayList<Integer> topCounts = new ArrayList<>();
+    VBox resultBox = new VBox(10);
+    ArrayList<Label> results = new ArrayList<>();
 
     private static final Object updateLock = new Object();
     private static final Object percentageLock = new Object();
@@ -136,6 +142,21 @@ public class Host extends Application implements ResponseUpdateListener{
 
 
 
+        //Result Scene
+        BorderPane resultPane = new BorderPane();
+        resultPane.setPadding(new Insets(10));
+        Scene resultScene = new Scene(resultPane, screen.getVisualBounds().getWidth(), screen.getVisualBounds().getHeight());
+
+        Label resultLabel = new Label("Results");
+        BorderPane.setAlignment(resultLabel, Pos.CENTER);
+        resultBox.setAlignment(Pos.CENTER);
+        resultLabel.setFont(new Font(40));
+
+
+
+        resultPane.setCenter(resultBox);
+        resultPane.setTop(resultLabel);
+
 
         //SOP Scene
         BorderPane root = new BorderPane();
@@ -170,6 +191,7 @@ public class Host extends Application implements ResponseUpdateListener{
 
 
         int queryTime = querySet.getTimePerQuery() * 1000;
+        System.out.println(queryTime);
         root.setBottom(timeLeft);
 
 
@@ -178,7 +200,7 @@ public class Host extends Application implements ResponseUpdateListener{
 
             if (querySet1.hasNext()) {
                 Platform.runLater(() -> {
-                    Query query1 = querySet1.getNext();
+                    query1 = querySet1.getNext();
                     manager.queryAll(query1);
                     options = query1.getOptions();
 
@@ -200,6 +222,11 @@ public class Host extends Application implements ResponseUpdateListener{
                 });
             } else {
                 manager.closeAll();
+                Platform.runLater(() -> {
+                    finalizeResults();
+                    primaryStage.setScene(resultScene);
+                    primaryStage.setMaximized(true);
+                });
             }
 
         };
@@ -213,6 +240,7 @@ public class Host extends Application implements ResponseUpdateListener{
             timer.schedule(new TimerTask() {
                 public void run() {
                     manager.writeResponsesToFile();
+                    updateTopArrays();
                     clearVoteCounts();
                     r.run();
                 }
@@ -251,6 +279,33 @@ public class Host extends Application implements ResponseUpdateListener{
         totalVotes = 0;
     }
 
+    private void updateTopArrays(){
+        if(voteCount.size() < 1) return;
+        int maxIndex = 0;
+        for(int i = 0; i < voteCount.size(); i++){
+            if(voteCount.get(i) > voteCount.get(maxIndex)){
+                maxIndex = i;
+            }
+        }
+
+        if(!(query1 == null)) {
+            topAnswers.add(query1.getOptions().get(maxIndex));
+            topCounts.add(voteCount.get(maxIndex));
+        }
+    }
+
+    private void finalizeResults(){
+        for(int i = 0; i < topAnswers.size(); i++){
+            Label toAdd = new Label((i + 1) + ". " + topAnswers.get(i) + " : " + topCounts.get(i));
+            toAdd.setFont(new Font(20));
+            results.add(toAdd);
+        }
+
+        for(Label l : results){
+            resultBox.getChildren().add(l);
+        }
+    }
+
     private void initServer() throws IOException {
         manager = new NetworkManager(this);
         this.recruiter = manager.recruiter;
@@ -265,11 +320,13 @@ public class Host extends Application implements ResponseUpdateListener{
         xAxis.setCategories(FXCollections.observableArrayList(options));
         xAxis.tickLabelFontProperty().set(Font.font(20));
         yAxis = new NumberAxis("Percent Votes", 0.0d, 100d, 10.0d);
-        yAxis.setAutoRanging(false);
         chart = new BarChart<>(xAxis, yAxis);
         chart.setAnimated(true);
         chart.setLegendVisible(false);
         chart.getData().add(dataSeries);
+        initPercentages();
+        chart.lookupAll(".default-color0.chart-bar")
+                .forEach(n -> n.setStyle("-fx-bar-fill: CornflowerBlue;"));
     }
 
     @Override
@@ -290,15 +347,27 @@ public class Host extends Application implements ResponseUpdateListener{
 
             if (totalVotes == 0) return;
             Platform.runLater(() -> {
-                dataSeries.getData().clear();
-
                 for (int i = 0; i < options.size(); i++) {
-
-                    dataSeries.getData().add(new XYChart.Data<>(options.get(i), (voteCount.get(i) / totalVotes) * 100.0));
+                    if(!(dataSeries.getData().get(i).getYValue().doubleValue() == (voteCount.get(i)* 100.0) / totalVotes)){
+                        dataSeries.getData().get(i).setYValue((voteCount.get(i)* 100.0) / totalVotes);
+                    }
                 }
-
                 System.out.println("Data Series: " + dataSeries.getData());
             });
+        }
+    }
+
+    public void initPercentages(){
+        for (int i = 0; i < options.size(); i++) {
+            dataSeries.getData().add(i, new XYChart.Data<>(options.get(i), 0));
+        }
+    }
+
+    public void clearPercentages(){
+        for (int i = 0; i < dataSeries.getData().size(); i++) {
+            if(!(dataSeries.getData().get(i).getYValue().doubleValue() == 0)){
+                dataSeries.getData().get(i).setYValue(0);
+            }
         }
     }
 

@@ -3,7 +3,7 @@ import java.util.ArrayList;
 
 public class QuerySet implements Serializable {
     private ArrayList<Query> queries = new ArrayList<>();
-    private int timePerQuery = 10; //Default to be overwritten by parseText
+    private int timePerQuery; //Default to be overwritten by parseText
 
     public QuerySet(int timePerQuery) {
         this.timePerQuery = timePerQuery;
