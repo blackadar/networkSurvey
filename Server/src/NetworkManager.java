@@ -78,7 +78,7 @@ public class NetworkManager implements ResponseUpdateListener{
         writer.write(lastQuery.getQuery());
         for(NetworkClient c : clients){
             if(c.hasResponse()){
-                writer.write(c.currentResponse.optionSelection + "");
+                writer.write(c.currentResponse.responseTo.getOptions().get(c.currentResponse.optionSelection) + "");
             } else {
                 writer.write("x");
             }

@@ -265,7 +265,7 @@ public class Host extends Application implements ResponseUpdateListener{
         xAxis.setCategories(FXCollections.observableArrayList(options));
         xAxis.tickLabelFontProperty().set(Font.font(20));
         yAxis = new NumberAxis("Percent Votes", 0.0d, 100d, 10.0d);
-
+        yAxis.setAutoRanging(false);
         chart = new BarChart<>(xAxis, yAxis);
         chart.setAnimated(true);
         chart.setLegendVisible(false);
@@ -293,6 +293,7 @@ public class Host extends Application implements ResponseUpdateListener{
                 dataSeries.getData().clear();
 
                 for (int i = 0; i < options.size(); i++) {
+
                     dataSeries.getData().add(new XYChart.Data<>(options.get(i), (voteCount.get(i) / totalVotes) * 100.0));
                 }
 
