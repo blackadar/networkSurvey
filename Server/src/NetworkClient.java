@@ -54,12 +54,10 @@ public class NetworkClient {
                 try {
                     parseSemaphore((ClientSemaphore)semaphoreIn.readObject());
                 } catch (SocketException | EOFException ex){
-                    System.err.println("Connection closed, unable to read.");
-                    ex.printStackTrace();
+                    System.err.println("Server encountered " + ex.toString());
                     manager.removeClient(this);
                 } catch (IOException | ClassNotFoundException e) {
-                    System.err.println("Unable to interpret client semaphore.");
-                    e.printStackTrace();
+                    System.err.println("Server encountered " + e.toString());
                 }
             }});
         queryListener = new Thread(() -> {
@@ -67,12 +65,10 @@ public class NetworkClient {
                 try {
                     parseQueryResponse((Response) queryIn.readObject());
                 } catch (SocketException | EOFException ex){
-                    System.err.println("Connection closed, unable to read.");
-                    ex.printStackTrace();
+                    System.err.println("Server encountered " + ex.toString());
                     manager.removeClient(this);
                 } catch (IOException | ClassNotFoundException e) {
-                    System.err.println("Unable to interpret client response.");
-                    e.printStackTrace();
+                    System.err.println("Server encountered " + e.toString());
                 }
             }
         });

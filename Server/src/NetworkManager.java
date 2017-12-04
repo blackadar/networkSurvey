@@ -71,19 +71,19 @@ public class NetworkManager implements ResponseUpdateListener{
             writer.write("Query");
             for(NetworkClient c : clients){
                 writer.write(c.identity.getName());
-                writer.newLine();
             }
+            writer.newLine();
+            fileHeaderWritten = true;
         }
-        writer.write(lastQuery.toString());
+        writer.write(lastQuery.getQuery());
         for(NetworkClient c : clients){
-
             if(c.hasResponse()){
                 writer.write(c.currentResponse.optionSelection + "");
             } else {
                 writer.write("x");
             }
-            writer.newLine();
         }
+        writer.newLine();
     }
 
     public void clearAllResponses(){

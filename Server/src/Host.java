@@ -4,18 +4,22 @@ import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.*;
@@ -34,13 +38,17 @@ import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.io.IOException;
+import java.net.*;
 import java.sql.Time;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.TimerTask;
 import java.util.Arrays;
 
 public class Host extends Application implements ResponseUpdateListener{
     Identity identity = new Identity("Alpha Survey Server");
+    ArrayList<String> addresses = new ArrayList<>();
+    int locationCounter = 0;
     boolean[] state = new boolean[7];
     private NetworkManager manager;
     private NetworkRecruiter recruiter;
@@ -53,6 +61,9 @@ public class Host extends Application implements ResponseUpdateListener{
     Rectangle timeLeft = new Rectangle(1, screen.getBounds().getHeight()/10, Color.GREY);
     ArrayList<String> options;
 
+    private static final Object updateLock = new Object();
+    private static final Object percentageLock = new Object();
+
     BarChart<String, Number> chart;
     CategoryAxis xAxis;
     NumberAxis yAxis;
@@ -63,42 +74,73 @@ public class Host extends Application implements ResponseUpdateListener{
     }
 
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage primaryStage) throws UnknownHostException, SocketException {
+        //Init
+        java.util.Timer timer = new java.util.Timer();
         primaryStage.getIcons().add(new Image(Host.class.getResourceAsStream("server.png")));
-        try {
-            initServer();
-        } catch (IOException e) {
-            //TODO: Alert user of fatal Network error
-            e.printStackTrace();
+
+        // @see "https://stackoverflow.com/questions/9481865/getting-the-ip-address-of-the-current-machine-using-java"
+        Enumeration e = NetworkInterface.getNetworkInterfaces();
+        while(e.hasMoreElements())
+        {
+            NetworkInterface n = (NetworkInterface) e.nextElement();
+            Enumeration ee = n.getInetAddresses();
+            while (ee.hasMoreElements())
+            {
+                InetAddress i = (InetAddress) ee.nextElement();
+                if(!((i.getHostAddress().trim().startsWith("fe") || (i.getHostAddress().trim().startsWith("0:") || (i.getHostAddress().trim().equals("127.0.0.1")))))) addresses.add(i.getHostAddress());
+            }
         }
 
+        try {
+            initServer();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
 
         JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
-        querySet = null;
         for(int i = 0; i < 4; i++){
             voteCount.add(0);
         }
-
-            int result = jfc.showOpenDialog(null);
-            if (result == JFileChooser.APPROVE_OPTION) {
-                File selectedFile = jfc.getSelectedFile();
-                if (selectedFile.exists()) {
-                    querySet = QuerySet.parseText(selectedFile.getPath());
-                }
-                else {
-                    JOptionPane.showConfirmDialog(null, "Query Set does not exist there.", "Error", JOptionPane.DEFAULT_OPTION);
+        int result = jfc.showOpenDialog(null);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = jfc.getSelectedFile();
+            if (selectedFile.exists()) {
+                querySet = QuerySet.parseText(selectedFile.getPath());
+                } else {
+                    JOptionPane.showConfirmDialog(null, "File Read Error.", "Error", JOptionPane.DEFAULT_OPTION);
                     System.exit(1);
                 }
-            }
+        }
+
+        //Queue Scene
+        BorderPane init = new BorderPane();
+        init.setPadding(new Insets(10,10,10,10));
+        Scene initScene = new Scene(init, 300, 300);
+
+        VBox labelHolder = new VBox(20);
+
+        Label status = new Label("Queueing");
+        Label location = new Label(addresses.get(0));
+        Button start = new Button("Start");
+
+        labelHolder.setAlignment(Pos.CENTER);
+
+        status.setFont(new Font(30));
+        location.setFont(new Font(30));
+        start.setFont(new Font(20));
+
+        labelHolder.getChildren().addAll(status, location);
+        init.setTop(labelHolder);
+        init.setCenter(start);
 
 
 
 
+        //SOP Scene
         BorderPane root = new BorderPane();
-        root.setPadding(new Insets(10, 10, 10, 10));
+        root.setPadding(new Insets(10, 10, 0, 10));
         Scene scene = new Scene(root, screen.getVisualBounds().getWidth(), screen.getVisualBounds().getHeight());
-        primaryStage.setScene(scene);
-        root.setStyle("-fx-border-color: cyan");
 
         // Start section Question and Answer
         Label query = new Label("Question");
@@ -109,11 +151,9 @@ public class Host extends Application implements ResponseUpdateListener{
         queryNum.setFont(new Font(40));
 
 
-
         BorderPane inPane = new BorderPane();
         inPane.prefHeightProperty().bind(scene.heightProperty());
         inPane.prefWidthProperty().bind(scene.widthProperty());
-        inPane.setStyle("-fx-border-color: springgreen");
 
 
         VBox questionBox = new VBox(5);
@@ -121,7 +161,6 @@ public class Host extends Application implements ResponseUpdateListener{
         questionBox.setAlignment(Pos.CENTER);
 
         GridPane answerPane = new GridPane();
-
         answerPane.setHgap(10);
         answerPane.setAlignment(Pos.CENTER);
 
@@ -129,56 +168,22 @@ public class Host extends Application implements ResponseUpdateListener{
         root.setCenter(inPane);
         root.setTop(questionBox);
 
-        primaryStage.show();
-
-
 
         int queryTime = querySet.getTimePerQuery() * 1000;
-
-        //while(querySet.hasNext()) {
-
-        java.util.Timer timer = new java.util.Timer();
-
-
-        HBox graphHolder = new HBox(50);
-        graphHolder.setPrefHeight(screen.getBounds().getHeight()*0.6);
-        graphHolder.setAlignment(Pos.BOTTOM_CENTER);
-        graphHolder.setPadding(new Insets(0, 0, 0, 50));
-
-        HBox labelHolder = new HBox(450);
-
-        labelHolder.setPrefHeight(screen.getBounds().getHeight()*.1);
-        labelHolder.setAlignment(Pos.CENTER);
-
-        inPane.setCenter(graphHolder);
-        inPane.setBottom(labelHolder);
-        ArrayList<Label> answers = new ArrayList<>();
-        for(int i = 0; i < 4; i++) {
-            answers.add(new Label());
-            answers.get(i).setAlignment(Pos.CENTER);
-            answers.get(i).setFont(new Font(20));
-            labelHolder.getChildren().add(answers.get(i));
-        }
         root.setBottom(timeLeft);
 
-        /*
-        for(int i = 0; i < 4; i++) {
-            rectangles.add(new Rectangle((inPane.getWidth() - (5*50))/4, i*100, Color.BLACK));
-            graphHolder.getChildren().add(rectangles.get(i));
-        }
-        */
-        Runnable r = () -> {
 
+        Runnable r = () -> {
             final QuerySet querySet1 = querySet;
 
             if (querySet1.hasNext()) {
                 Platform.runLater(() -> {
                     Query query1 = querySet1.getNext();
-
                     manager.queryAll(query1);
-
-                    // Answer Labels
                     options = query1.getOptions();
+
+                    createBarGraph(options);
+                    inPane.setCenter(chart);
 
                     root.getChildren().remove(timeLeft);
                     timeLeft = new Rectangle(1, scene.getHeight() / 10, Color.GRAY);
@@ -187,41 +192,47 @@ public class Host extends Application implements ResponseUpdateListener{
                     query.setText(query1.getQuery());
                     queryNum.setText("Question " + counter);
 
-                    /*
-                    for (int z = 0; z < answers.size(); z++) {
-                        answers.get(z).setText(options.get(z));
-                    }
-                    */
-                    // Rectangle Timer section
                     ScaleTransition scaleTransition = new ScaleTransition(Duration.millis(queryTime + 850), timeLeft);
                     scaleTransition.setToX(scene.getWidth() * 2);
-
-                    createBarGraph(options);
-                    inPane.setCenter(chart);
-
-                    //chart.getData().add(new XYChart.Series<>());
-
-
-                    /*
-                    //Reset Graph
-                    totalVotes = 0;
-                    voteCount = new ArrayList<>();
-                    updatePercentages();
-                    */
 
                     scaleTransition.play();
                     counter++;
                 });
+            } else {
+                manager.closeAll();
             }
 
         };
-        r.run();
-        timer.schedule(new TimerTask() {
+
+        //Handlers
+        start.setOnAction(event -> {
+            primaryStage.setScene(scene);
+            primaryStage.setMaximized(true);
+            timer.purge();
+            r.run();
+            timer.schedule(new TimerTask() {
                 public void run() {
+                    manager.writeResponsesToFile();
+                    clearVoteCounts();
                     r.run();
                 }
             }, queryTime, queryTime);
+        });
 
+        timer.schedule(new TimerTask() {
+            public void run(){
+                if(locationCounter + 1 < addresses.size()){
+                    locationCounter++;
+                } else {
+                    locationCounter = 0;
+                }
+                Platform.runLater(() -> location.setText(addresses.get(locationCounter)));
+            }
+        }, 0, 3000);
+
+        //Logic
+        primaryStage.setScene(initScene);
+        primaryStage.show();
 
     }
 
@@ -230,6 +241,14 @@ public class Host extends Application implements ResponseUpdateListener{
         recruiter.close();
         manager.closeAll();
         System.exit(0);
+    }
+
+    private void clearVoteCounts(){
+        dataSeries.getData().clear();
+        for(int i = 0; i < voteCount.size(); i++){
+            voteCount.set(i,0);
+        }
+        totalVotes = 0;
     }
 
     private void initServer() throws IOException {
@@ -243,34 +262,43 @@ public class Host extends Application implements ResponseUpdateListener{
 
     public void createBarGraph(ArrayList<String> options) {
         xAxis =  new CategoryAxis();
-        xAxis.setCategories(FXCollections.<String>observableArrayList(options));
-        xAxis.setLabel("Answers");
+        xAxis.setCategories(FXCollections.observableArrayList(options));
+        xAxis.tickLabelFontProperty().set(Font.font(20));
         yAxis = new NumberAxis("Percent Votes", 0.0d, 100d, 10.0d);
 
-        //dataSeries.setName("Answer Percentage");
-
         chart = new BarChart<>(xAxis, yAxis);
+        chart.setAnimated(true);
+        chart.setLegendVisible(false);
+        chart.getData().add(dataSeries);
     }
 
     @Override
     public void update(Response r) {
-        System.out.println("Got a response " + r.optionSelection);
-        totalVotes++;
-        System.out.println(voteCount.get(r.optionSelection));
-        voteCount.set(r.optionSelection, voteCount.get(r.optionSelection) +1);
-        System.out.println(voteCount.get(r.optionSelection));
-        updatePercentages();
+        synchronized (updateLock) {
+            System.out.println("Got a response " + r.optionSelection);
+            totalVotes++;
+            voteCount.set(r.optionSelection, voteCount.get(r.optionSelection) + 1);
+            updatePercentages();
+        }
     }
 
     public void updatePercentages() {
-        if(totalVotes == 0) return;
+        synchronized (percentageLock) {
+            System.out.println("Updating Percentages: \n" +
+                    "Total Votes: " + totalVotes + "\n" +
+                    "Vote Counts: " + voteCount + "\n");
 
-        Platform.runLater(() -> {
-            for(int i = 0; i < options.size(); i++) {
-                dataSeries.getData().add(new XYChart.Data<>(options.get(i), (voteCount.get(i)/totalVotes) * 100));
-            }
-            chart.getData().add(dataSeries);
-        });
+            if (totalVotes == 0) return;
+            Platform.runLater(() -> {
+                dataSeries.getData().clear();
+
+                for (int i = 0; i < options.size(); i++) {
+                    dataSeries.getData().add(new XYChart.Data<>(options.get(i), (voteCount.get(i) / totalVotes) * 100.0));
+                }
+
+                System.out.println("Data Series: " + dataSeries.getData());
+            });
+        }
     }
 
 }

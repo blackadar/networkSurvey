@@ -56,13 +56,8 @@ public class NetworkServer {
             while(!threadStop){
                 try {
                     parseSemaphore((ServerSemaphore) semaphoreIn.readObject());
-                } catch (SocketException | EOFException ex){
-                    System.err.println("Connection closed, unable to read.");
-                    ex.printStackTrace();
-                    close();
                 } catch (IOException | ClassNotFoundException e) {
-                    System.err.println("Unable to interpret server semaphore.");
-                    e.printStackTrace();
+                    System.err.println("Client encountered " + e.toString());
                     close();
                 }
             }
@@ -72,12 +67,8 @@ public class NetworkServer {
             while(!threadStop){
                 try {
                     parseQuery((Query) queryIn.readObject());
-                } catch (SocketException | EOFException ex){
-                    System.err.println("Connection closed, unable to read.");
-                    ex.printStackTrace();
                 } catch (IOException | ClassNotFoundException e) {
-                    System.err.println("Unable to interpret server query.");
-                    e.printStackTrace();
+                    System.err.println("Client encountered " + e.toString());
                 }
             }
         });
