@@ -38,25 +38,24 @@ public class Host extends Application implements ResponseUpdateListener {
     private static final Object updateLock = new Object();
     private static final Object percentageLock = new Object();
     Identity identity = new Identity("Alpha Survey Server");
-    ArrayList<String> addresses = new ArrayList<>();
-    int locationCounter = 0;
+    private ArrayList<String> addresses = new ArrayList<>();
+    private int locationCounter = 0;
     boolean[] state = new boolean[7];
-    Query query1;
-    ArrayList<Rectangle> rectangles = new ArrayList<>();
-    ArrayList<Integer> voteCount = new ArrayList<>();
-    Screen screen = Screen.getPrimary();
-    int totalVotes = 0;
-    int counter = 1;
-    Rectangle timeLeft = new Rectangle(1, screen.getBounds().getHeight() / 10, Color.GREY);
-    ArrayList<String> options;
-    ArrayList<String> topAnswers = new ArrayList<>();
-    ArrayList<Integer> topCounts = new ArrayList<>();
-    VBox resultBox = new VBox(10);
-    ArrayList<Label> results = new ArrayList<>();
-    BarChart<String, Number> chart;
+    private Query query1;
+    private ArrayList<Integer> voteCount = new ArrayList<>();
+    private Screen screen = Screen.getPrimary();
+    private int totalVotes = 0;
+    private int counter = 1;
+    private Rectangle timeLeft = new Rectangle(1, screen.getBounds().getHeight() / 10, Color.GREY);
+    private ArrayList<String> options;
+    private ArrayList<String> topAnswers = new ArrayList<>();
+    private ArrayList<Integer> topCounts = new ArrayList<>();
+    private VBox resultBox = new VBox(10);
+    private ArrayList<Label> results = new ArrayList<>();
+    private BarChart<String, Number> chart;
     CategoryAxis xAxis;
     NumberAxis yAxis;
-    XYChart.Series<String, Number> dataSeries = new XYChart.Series<>();
+    private XYChart.Series<String, Number> dataSeries = new XYChart.Series<>();
     private NetworkManager manager;
     private NetworkRecruiter recruiter;
     private QuerySet querySet;
@@ -298,7 +297,7 @@ public class Host extends Application implements ResponseUpdateListener {
         return new ServerSemaphore(identity, state);
     }
 
-    public void createBarGraph(ArrayList<String> options) {
+    private void createBarGraph(ArrayList<String> options) {
         xAxis = new CategoryAxis();
         xAxis.setCategories(FXCollections.observableArrayList(options));
         xAxis.tickLabelFontProperty().set(Font.font(20));
@@ -321,7 +320,7 @@ public class Host extends Application implements ResponseUpdateListener {
         }
     }
 
-    public void updatePercentages() {
+    private void updatePercentages() {
         synchronized (percentageLock) {
             if (totalVotes == 0) return;
             Platform.runLater(() -> {
@@ -334,7 +333,7 @@ public class Host extends Application implements ResponseUpdateListener {
         }
     }
 
-    public void initPercentages() {
+    private void initPercentages() {
         for (int i = 0; i < options.size(); i++) {
             dataSeries.getData().add(i, new XYChart.Data<>(options.get(i), 0));
         }
