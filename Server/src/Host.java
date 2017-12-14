@@ -18,6 +18,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
+import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -88,19 +89,16 @@ public class Host extends Application implements ResponseUpdateListener {
             ex.printStackTrace();
         }
 
-        JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+        FileChooser fc = new FileChooser();
         for (int i = 0; i < 4; i++) {
             voteCount.add(0);
         }
-        int result = jfc.showOpenDialog(null);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = jfc.getSelectedFile();
-            if (selectedFile.exists()) {
-                querySet = QuerySet.parseText(selectedFile.getPath());
-            } else {
-                JOptionPane.showConfirmDialog(null, "File Read Error.", "Error", JOptionPane.DEFAULT_OPTION);
-                System.exit(1);
-            }
+        File result = fc.showOpenDialog(primaryStage);
+        if (result.exists()) {
+            querySet = QuerySet.parseText(result.getPath());
+        } else {
+            JOptionPane.showConfirmDialog(null, "File Read Error.", "Error", JOptionPane.DEFAULT_OPTION);
+            System.exit(1);
         }
 
         //Queue Scene
